@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComposerAI - Crie arranjos musicais</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #4f46e5;
+            --accent-color: #8b5cf6;
+            --dark-bg: #111827;
+            --light-bg: #f9fafb;
+            --text-light: #f3f4f6;
+            --text-dark: #1f2937;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary-color);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--primary-color);
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, #fff, var(--primary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin-bottom: 2.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .main-btn {
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.8rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .main-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+        }
+
+        .composer {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .composer-container {
+            background-color: rgba(31, 41, 55, 0.7);
+            border-radius: 1rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .input-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .prompt-input {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        #prompt {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(17, 24, 39, 0.8);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .piano-container {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .piano {
+            display: flex;
+            position: relative;
+            margin: 2rem 0;
+        }
+
+        .key {
+            height: 150px;
+            width: 40px;
+            border: 1px solid #000;
+            background-color: white;
+            color: black;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 10px;
+            font-weight: bold;
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .key:active, .key.active {
+            background-color: #e0e0e0;
+            transform: translateY(2px);
+        }
+
+        .black-key {
+            position: absolute;
+            height: 90px;
+            width: 24px;
+            background-color: #111;
+            z-index: 1;
+            border-radius: 0 0 3px 3px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 10px;
+            font-size: 0.8rem;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .black-key:active, .black-key.active {
+            background-color: #333;
+            transform: translateY(2px);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .control-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            background-color: var(--dark-bg);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.3s;
+        }
+
+        .control-btn:hover {
+            background-color: #2d3748;
+        }
+
+        .control-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .track-container {
+            margin-top: 2rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .track-header {
+            background-color: rgba(17, 24, 39, 0.9);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .track-title {
+            font-weight: 600;
+        }
+
+        .track-content {
+            background-color: rgba(17, 24, 39, 0.5);
+            padding: 1rem;
+            min-height: 150px;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .note-block {
+            background-color: var(--primary-color);
+            border-radius: 0.3rem;
+            padding: 0.5rem;
+            color: white;
+            font-size: 0.9rem;
+            cursor: move;
+            transition: transform 0.2s;
+        }
+
+        .note-block:hover {
+            transform: translateY(-2px);
+        }
+
+        .instruments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .instrument {
+            background-color: rgba(31, 41, 55, 0.7);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.3s;
+            min-width: 100px;
+        }
+
+        .instrument:hover {
+            background-color: rgba(55, 65, 81, 0.7);
+            transform: translateY(-2px);
+        }
+
+        .instrument.active {
+            border: 2px solid var(--primary-color);
+        }
+
+        .instrument svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        .instrument-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 2rem;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .composer-container {
+                padding: 1rem;
+            }
+
+            .piano {
+                transform: scale(0.8);
+                margin: 0;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .control-group {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+            ComposerAI
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#">Início</a></li>
+                <li><a href="#">Biblioteca</a></li>
+                <li><a href="#">Tutorial</a></li>
+                <li><a href="#">Conta</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Crie música com Inteligência Artificial</h1>
+        <p>Componha, arranje e produza arranjos musicais incríveis em segundos. Uma nova forma de expressar sua criatividade musical.</p>
+        <button class="main-btn" id="startButton">Começar a compor</button>
+    </section>
+
+    <main class="composer">
+        <div class="composer-container">
+            <div class="input-section">
+                <h2>Descreva sua ideia musical</h2>
+                <p>Descreva o tipo de música que você quer criar ou use o piano virtual para compor suas melodias.</p>
+                <div class="prompt-input">
+                    <input type="text" id="prompt" placeholder="Ex: Um ritmo de bossa nova suave com violão e piano..." />
+                    <button class="main-btn" id="generateBtn">Gerar</button>
+                </div>
+            </div>
+
+            <div class="piano-container">
+                <div class="piano">
+                    <div class="key" data-note="C4">C</div>
+                    <div class="black-key" style="left: 28px;" data-note="C#4">C#</div>
+                    <div class="key" data-note="D4">D</div>
+                    <div class="black-key" style="left: 68px;" data-note="D#4">D#</div>
+                    <div class="key" data-note="E4">E</div>
+                    <div class="key" data-note="F4">F</div>
+                    <div class="black-key" style="left: 148px;" data-note="F#4">F#</div>
+                    <div class="key" data-note="G4">G</div>
+                    <div class="black-key" style="left: 188px;" data-note="G#4">G#</div>
+                    <div class="key" data-note="A4">A</div>
+                    <div class="black-key" style="left: 228px;" data-note="A#4">A#</div>
+                    <div class="key" data-note="B4">B</div>
+                    <div class="key" data-note="C5">C</div>
+                </div>
+            </div>
+
+            <div class="instruments">
+                <div class="instrument active" data-instrument="piano">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 10h-2v2h-2v-2H7v-2h6v-2h2v2h2v2z"/>
+                    </svg>
+                    <span class="instrument-name">Piano</span>
+                </div>
+                <div class="instrument" data-instrument="guitar">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19.59 3H22v2h-1.59l-5.29 5.29c.76.76.88 1.91.36 2.8l-1.27 2.18L9 10.17l2.16-1.28c.88-.53 2.03-.4 2.79.36L19.59 3M11.1 14.19l-1.26 1.28L7.5 13.15l1.24-1.29 2.36 2.33m-4.97 1.38l1.31-1.35 2.36 2.36-1.19 1.3-2.48-2.31m-1.3 1.44l1.27-1.33 2.43 2.39-1.18 1.3-2.52-2.36M2 20l2 2 6.26-6.31-2.04-2-6.22 6.31z"/>
+                    </svg>
+                    <span class="instrument-name">Violão</span>
+                </div>
+                <div class="instrument" data-instrument="bass">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19.59 3H22v2h-1.59l-5.29 5.29c.76.76.88 1.91.36 2.8l-1.27 2.18L9 10.17l2.16-1.28c.88-.53 2.03-.4 2.79.36L19.59 3M2 20l2 2 6.26-6.31-2.04-2L2 20m11.85-9.77l-2.78 2.79 7.13 7.13 2.78-2.78-7.13-7.14z"/>
+                    </svg>
+                    <span class="instrument-name">Baixo</span>
+                </div>
+                <div class="instrument" data-instrument="drums">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C5.5 2 2 5.5 2 9c0 2.3 1.5 4.1 3 5.1V15l-1 1v3l1 1v2h14v-2l1-1v-3l-1-1v-.9c1.5-1 3-2.8 3-5.1 0-3.5-3.5-7-10-7M5 8h2v3H5zm14 0h-2v3h2z"/>
+                    </svg>
+                    <span class="instrument-name">Bateria</span>
+                </div>
+                <div class="instrument" data-instrument="synth">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM5 4h2v16H5V4zm4 0h6v16H9V4zm10 16h-2V4h2v16z"/>
+                    </svg>
+                    <span class="instrument-name">Sintetizador</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <button class="control-btn" id="playBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M8 5v14l11-7z"/>
+                        </svg>
+                        Reproduzir
+                    </button>
+                    <button class="control-btn" id="stopBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M6 6h12v12H6z"/>
+                        </svg>
+                        Parar
+                    </button>
+                    <button class="control-btn" id="recordBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                            <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                        </svg>
+                        Gravar
+                    </button>
+                </div>
+                <div class="control-group">
+                    <button class="control-btn" id="saveBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zM12 19c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm1-10H7V4h6v5z"/>
+                        </svg>
+                        Salvar
+                    </button>
+                    <button class="control-btn" id="exportBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/>
+                        </svg>
+                        Exportar
+                    </button>
+                </div>
+            </div>
+
+            <div class="track-container">
+                <div class="track-header">
+                    <span class="track-title">Trilha principal</span>
+                    <div class="track-actions">
+                        <button class="control-btn">
+                            <svg viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="track-content" id="trackContent">
+                    <!-- As notas serão adicionadas aqui dinamicamente -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2025 ComposerAI - Desenvolvido com ❤️ para músicos e entusiastas</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicialização do Tone.js
+            const synth = new Tone.PolySynth().toDestination();
+            let isRecording = false;
+            let recordedNotes = [];
+            
+            // Referência para elementos importantes
+            const playBtn = document.getElementById('playBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const recordBtn = document.getElementById('recordBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const generateBtn = document.getElementById('generateBtn');
+            const promptInput = document.getElementById('prompt');
+            const trackContent = document.getElementById('trackContent');
+            const startButton = document.getElementById('startButton');
+            
+            // Eventos para o piano
+            const keys = document.querySelectorAll('.key, .black-key');
+            keys.forEach(key => {
+                key.addEventListener('mousedown', function() {
+                    const note = this.getAttribute('data-note');
+                    playNote(note);
+                    this.classList.add('active');
+                    
+                    if (isRecording) {
+                        recordedNotes.push({
+                            note: note,
+                            time: Tone.now() - recordStartTime
+                        });
+                        
+                        // Adicionar visualmente a nota na trilha
+                        addNoteToTrack(note);
+                    }
+                });
+                
+                key.addEventListener('mouseup', function() {
+                    this.classList.remove('active');
+                });
+                
+                key.addEventListener('mouseleave', function() {
+                    this.classList.remove('active');
+                });
+            });
+            
+            // Instrumentos
+            const instruments = document.querySelectorAll('.instrument');
+            instruments.forEach(inst => {
+                inst.addEventListener('click', function() {
+                    instruments.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const instrumentType = this.getAttribute('data-instrument');
+                    changeInstrument(instrumentType);
+                });
+            });
+            
+            // Função para tocar uma nota
+            function playNote(note) {
+                synth.triggerAttackRelease(note, "8n");
+            }
+            
+            // Mudar o instrumento selecionado
+            function changeInstrument(instrument) {
+                // No mundo real, mudaríamos para diferentes sintetizadores aqui
+                switch(instrument) {
+                    case 'piano':
+                        synth.set({ oscillator: { type: 'triangle' }});
+                        break;
+                    case 'guitar':
+                        synth.set({ oscillator: { type: 'sawtooth' }});
+                        break;
+                    case 'bass':
+                        synth.set({ oscillator: { type: 'sine' }});
+                        break;
+                    case 'drums':
+                        // Simplificado para este exemplo
+                        synth.set({ oscillator: { type: 'square' }});
+                        break;
+                    case 'synth':
+                        synth.set({ oscillator: { type: 'fatsawtooth' }});
+                        break;
+                }
+            }
+            
+            // Variáveis para gravar
+            let recordStartTime = 0;
+            
+            // Evento de botão de reprodução
+            playBtn.addEventListener('click', function() {
+                if (recordedNotes.length > 0) {
+                    const now = Tone.now();
+                    
+                    // Reproduz as notas gravadas
+                    recordedNotes.forEach(noteData => {
+                        synth.triggerAttackRelease(noteData.note, "8n", now + noteData.time);
+                    });
+                }
+            });
+            
+            // Botão de gravação
+            recordBtn.addEventListener('click', function() {
+                if (!isRecording) {
+                    // Iniciar gravação
+                    isRecording = true;
+                    recordStartTime = Tone.now();
+                    recordedNotes = [];
+                    recordBtn.classList.add('active');
+                    recordBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                            <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                        </svg>
+                        Gravando...
+                    `;
+                    trackContent.innerHTML = ''; // Limpa a trilha
+                } else {
+                    // Parar gravação
+                    isRecording = false;
+                    recordBtn.classList.remove('active');
+                    recordBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                            <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                        </svg>
+                        Gravar
+                    `;
+                }
+            });
+            
+            // Botão de parar
+            stopBtn.addEventListener('click', function() {
+                Tone.Transport.stop();
+                synth.releaseAll();
+                
+                if (isRecording) {
+                    isRecording = false;
+                    recordBtn.classList.remove('active');
+                    recordBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                            <circle cx="12" cy="12" r="5" fill="currentColor"/>
+                        </svg>
+                        Gravar
+                    `;
+                }
+            });
+            
+            // Função para adicionar nota à trilha visualmente
+            function addNoteToTrack(noteName) {
+                const noteBlock = document.createElement('div');
+                noteBlock.className = 'note-block';
+                noteBlock.textContent = noteName;
+                noteBlock.addEventListener('click', function() {
+                    playNote(noteName);
+                });
+                trackContent.appendChild(noteBlock);
+            }
+            
+            // Função para simular geração de música com base na descrição
+            generateBtn.addEventListener('click', function() {
+                const prompt = promptInput.value.trim();
+                
+                if (prompt.length > 0) {
+                    // Simulação de geração de notas baseadas no prompt
+                    // Isso seria substituído por uma IA real em um caso de uso real
+                    trackContent.innerHTML = '';
+                    
+                    setTimeout(() => {
+                        const sampleNotes = ['C4', 'E4', 'G4', 'A4', 'D4', 'F4', 'G4', 'B4'];
+                        recordedNotes = [];
+                        
+                        // Gera uma sequência aleatória baseada no comprimento do prompt
+                        for (let i = 0; i < Math.min(prompt.length, 15); i++) {
+                            const randomNote = sampleNotes[Math.floor(Math.random() * sampleNotes.length)];
+                            recordedNotes.push({
+                                note: randomNote,
+                                time: i * 0.5
+                            });
+                            addNoteToTrack(randomNote);
+                        }
+                        
+                        alert("Arranjo gerado com base na descrição!");
+                    }, 1000);
+                }
+            });
+            
+            // Botão de salvar
+            saveBtn.addEventListener('click', function() {
+                alert("Projeto salvo na biblioteca!");
+            });
+            
+            // Botão de exportar
+            exportBtn.addEventListener('click', function() {
+                if (recordedNotes.length > 0) {
+                    alert("Arranjo exportado como arquivo de áudio!");
+                } else {
+                    alert("Não há notas para exportar. Grave algo primeiro!");
+                }
+            });
+            
+            // Iniciar a composição ao clicar no botão principal
+            startButton.addEventListener('click', function() {
+                // Rolagem suave até a seção de composição
+                document.querySelector('.composer').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+                
+                // Foco no campo de prompt
+                setTimeout(() => {
+                    promptInput.focus();
+                }, 800);
+            });
+            
+            // Adicionar suporte para teclado do computador
+            const keyboardMap = {
+                'a': 'C4',
+                'w': 'C#4',
+                's': 'D4',
+                'e': 'D#4',
+                'd': 'E4',
+                'f': 'F4',
+                't': 'F#4',
+                'g': 'G4',
+                'y': 'G#4',
+                'h': 'A4',
+                'u': 'A#4',
+                'j': 'B4',
+                'k': 'C5'
+            };
+            
+            document.addEventListener('keydown', function(e) {
+                if (!e.repeat && keyboardMap[e.key]) {
+                    const note = keyboardMap[e.key];
+                    playNote(note);
+                    
+                    // Destacar visualmente a tecla
+                    const keyElement = document.querySelector(`[data-note="${note}"]`);
+                    if (keyElement) {
+                        keyElement.classList.add('active');
+                        
+                        if (isRecording) {
+                            recordedNotes.push({
+                                note: note,
+                                time: Tone.now() - recordStartTime
+                            });
+                            
+                            addNoteToTrack(note);
+                        }
+                    }
+                }
+            });
+            
+            document.addEventListener('keyup', function(e) {
+                if (keyboardMap[e.key]) {
+                    const note = keyboardMap[e.key];
+                    const keyElement = document.querySelector(`[data-note="${note}"]`);
+                    if (keyElement) {
+                        keyElement.classList.remove('active');
+                    }
+                }
+            });
+            
+            // Função para criar uma sequência baseada em acordes comuns
+            function generateSequence(style) {
+                const sequences = {
+                    'pop': ['C4', 'G4', 'A4', 'F4', 'C4', 'G4', 'A4', 'F4'],
+                    'jazz': ['D4', 'G4', 'B4', 'E4', 'A4', 'C5', 'F4', 'A4'],
+                    'bossa': ['A4', 'D4', 'G4', 'C4', 'F4', 'E4', 'A4', 'D4'],
+                    'rock': ['E4', 'G4', 'D4', 'A4', 'E4', 'G4', 'D4', 'C4'],
+                    'classical': ['C4', 'E4', 'G4', 'C5', 'E4', 'G4', 'C5', 'G4']
+                };
+                
+                // Identifica o estilo baseado no texto do prompt
+                let matchedStyle = 'pop'; // estilo padrão
+                
+                for (const [key, _] of Object.entries(sequences)) {
+                    if (style.toLowerCase().includes(key)) {
+                        matchedStyle = key;
+                        break;
+                    }
+                }
+                
+                return sequences[matchedStyle];
+            }
+            
+            // Melhoria na geração baseada em prompt
+            generateBtn.addEventListener('click', function() {
+                const prompt = promptInput.value.trim();
+                
+                if (prompt.length > 0) {
+                    // Mostrar feedback de processamento
+                    trackContent.innerHTML = '<div class="processing">Processando seu pedido...</div>';
+                    
+                    setTimeout(() => {
+                        // Aqui seria a integração com IA
+                        const generatedSequence = generateSequence(prompt);
+                        trackContent.innerHTML = '';
+                        recordedNotes = [];
+                        
+                        // Gera uma sequência baseada no estilo detectado no prompt
+                        for (let i = 0; i < generatedSequence.length; i++) {
+                            const note = generatedSequence[i];
+                            recordedNotes.push({
+                                note: note,
+                                time: i * 0.5
+                            });
+                            addNoteToTrack(note);
+                        }
+                        
+                        // Reproduz automaticamente a sequência gerada
+                        const now = Tone.now();
+                        recordedNotes.forEach(noteData => {
+                            synth.triggerAttackRelease(noteData.note, "8n", now + noteData.time);
+                        });
+                        
+                    }, 1500);
+                } else {
+                    alert("Por favor, descreva o tipo de música que você deseja criar!");
+                }
+            });
+            
+            // Adiciona funcionalidade de arrastar e soltar para reorganizar notas
+            let draggedElement = null;
+            
+            function enableDragAndDrop() {
+                document.addEventListener('dragstart', (e) => {
+                    if (e.target.classList.contains('note-block')) {
+                        draggedElement = e.target;
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/html', e.target.innerHTML);
+                        e.target.style.opacity = '0.4';
+                    }
+                });
+                
+                document.addEventListener('dragover', (e) => {
+                    if (e.target.classList.contains('note-block') || e.target.classList.contains('track-content')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+                
+                document.addEventListener('dragenter', (e) => {
+                    if (e.target.classList.contains('note-block')) {
+                        e.target.style.border = '2px dashed #fff';
+                    }
+                });
+                
+                document.addEventListener('dragleave', (e) => {
+                    if (e.target.classList.contains('note-block')) {
+                        e.target.style.border = '';
+                    }
+                });
+                
+                document.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    
+                    if (e.target.classList.contains('note-block')) {
+                        e.target.style.border = '';
+                        e.target.style.opacity = '1';
+                        
+                        // Trocar as posições
+                        const parent = e.target.parentNode;
+                        
+                        if (draggedElement !== e.target) {
+                            const draggedIndex = Array.from(parent.children).indexOf(draggedElement);
+                            const targetIndex = Array.from(parent.children).indexOf(e.target);
+                            
+                            if (draggedIndex < targetIndex) {
+                                parent.insertBefore(draggedElement, e.target.nextSibling);
+                            } else {
+                                parent.insertBefore(draggedElement, e.target);
+                            }
+                            
+                            // Atualizar a ordem das notas gravadas também
+                            updateRecordedNotesOrder();
+                        }
+                    } else if (e.target.classList.contains('track-content')) {
+                        e.target.appendChild(draggedElement);
+                        updateRecordedNotesOrder();
+                    }
+                    
+                    return false;
+                });
+                
+                document.addEventListener('dragend', (e) => {
+                    if (e.target.classList.contains('note-block')) {
+                        e.target.style.opacity = '1';
+                        draggedElement = null;
+                    }
+                });
+            }
+            
+            function updateRecordedNotesOrder() {
+                const noteBlocks = trackContent.querySelectorAll('.note-block');
+                const newRecordedNotes = [];
+                
+                noteBlocks.forEach((block, index) => {
+                    newRecordedNotes.push({
+                        note: block.textContent,
+                        time: index * 0.5 // Espaçamento constante para simplicidade
+                    });
+                });
+                
+                recordedNotes = newRecordedNotes;
+            }
+            
+            // Tornar os blocos de nota arrastáveis
+            function makeNoteBlocksDraggable() {
+                document.querySelectorAll('.note-block').forEach(block => {
+                    block.setAttribute('draggable', 'true');
+                });
+            }
+            
+            // Adicionar temporizador visual para reprodução
+            let playbackVisualizer = null;
+            
+            playBtn.addEventListener('click', function() {
+                // Limpa qualquer visualização anterior
+                if (playbackVisualizer) {
+                    clearInterval(playbackVisualizer);
+                }
+                
+                if (recordedNotes.length > 0) {
+                    const noteBlocks = trackContent.querySelectorAll('.note-block');
+                    
+                    // Inicializa a visualização
+                    let currentIndex = 0;
+                    playbackVisualizer = setInterval(() => {
+                        // Remove destaque anterior
+                        noteBlocks.forEach(block => block.style.transform = '');
+                        
+                        if (currentIndex < noteBlocks.length) {
+                            noteBlocks[currentIndex].style.transform = 'scale(1.2)';
+                            currentIndex++;
+                        } else {
+                            clearInterval(playbackVisualizer);
+                        }
+                    }, 500); // Corresponde ao tempo entre notas
+                }
+            });
+            
+            // Inicializar arrastar e soltar
+            enableDragAndDrop();
+            
+            // Adicionar informações de teclas na interface
+            function addKeyboardInstructions() {
+                const pianoContainer = document.querySelector('.piano-container');
+                const instructions = document.createElement('div');
+                instructions.className = 'keyboard-instructions';
+                instructions.innerHTML = `
+                    <p>Teclas de atalho: A-S-D-F-G-H-J-K (notas brancas) | W-E-T-Y-U (notas pretas)</p>
+                `;
+                instructions.style.textAlign = 'center';
+                instructions.style.marginTop = '10px';
+                instructions.style.fontSize = '0.9rem';
+                instructions.style.opacity = '0.8';
+                pianoContainer.appendChild(instructions);
+            }
+            
+            // Adicionar funcionalidade para criar novas trilhas
+            function createNewTrack() {
+                const trackNumber = document.querySelectorAll('.track-container').length + 1;
+                const trackName = trackNumber === 1 ? 'Trilha principal' : `Trilha ${trackNumber}`;
+                
+                const trackContainer = document.createElement('div');
+                trackContainer.className = 'track-container';
+                trackContainer.innerHTML = `
+                    <div class="track-header">
+                        <span class="track-title">${trackName}</span>
+                        <div class="track-actions">
+                            <button class="control-btn track-options">
+                                <svg viewBox="0 0 24 24">
+                                    <path fill="currentColor" d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="track-content" id="trackContent${trackNumber}"></div>
+                `;
+                
+                // Inserir antes dos controles
+                const composerContainer = document.querySelector('.composer-container');
+                composerContainer.insertBefore(trackContainer, document.querySelector('.controls').nextSibling);
+                
+                return trackContainer.querySelector('.track-content');
+            }
+            
+            // Adicionar botão para criar nova trilha
+            function addNewTrackButton() {
+                const controlGroup = document.querySelector('.control-group:first-child');
+                const newTrackBtn = document.createElement('button');
+                newTrackBtn.className = 'control-btn';
+                newTrackBtn.id = 'newTrackBtn';
+                newTrackBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    Nova Trilha
+                `;
+                
+                controlGroup.appendChild(newTrackBtn);
+                
+                newTrackBtn.addEventListener('click', function() {
+                    createNewTrack();
+                });
+            }
+            
+            addNewTrackButton();
+            
+            // Adicionar botão para ajuda/tutorial
+            function addHelpButton() {
+                const header = document.querySelector('header nav ul');
+                const helpLi = document.createElement('li');
+                const helpLink = document.createElement('a');
+                helpLink.href = '#';
+                helpLink.textContent = 'Ajuda';
+                helpLi.appendChild(helpLink);
+                header.appendChild(helpLi);
+                
+                helpLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showTutorial();
+                });
+            }
+            
+            function showTutorial() {
+                const tutorialOverlay = document.createElement('div');
+                tutorialOverlay.className = 'tutorial-overlay';
+                tutorialOverlay.style.position = 'fixed';
+                tutorialOverlay.style.top = '0';
+                tutorialOverlay.style.left = '0';
+                tutorialOverlay.style.width = '100%';
+                tutorialOverlay.style.height = '100%';
+                tutorialOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+                tutorialOverlay.style.zIndex = '1000';
+                tutorialOverlay.style.display = 'flex';
+                tutorialOverlay.style.flexDirection = 'column';
+                tutorialOverlay.style.alignItems = 'center';
+                tutorialOverlay.style.justifyContent = 'center';
+                tutorialOverlay.style.padding = '2rem';
+                
+                tutorialOverlay.innerHTML = `
+                    <div class="tutorial-content" style="max-width: 800px; background: #1a1a2e; padding: 2rem; border-radius: 1rem; position: relative;">
+                        <h2 style="margin-bottom: 1.5rem; color: #fff; font-size: 1.8rem;">Como usar o ComposerAI</h2>
+                        
+                        <div class="tutorial-step" style="margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">1. Descreva sua ideia musical</h3>
+                            <p>Digite uma descrição da música que deseja criar no campo de texto e clique em "Gerar".</p>
+                        </div>
+                        
+                        <div class="tutorial-step" style="margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">2. Use o piano virtual</h3>
+                            <p>Clique nas teclas do piano ou use seu teclado (A-S-D-F-G-H-J-K para notas brancas, W-E-T-Y-U para notas pretas) para tocar notas.</p>
+                        </div>
+                        
+                        <div class="tutorial-step" style="margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">3. Grave sua melodia</h3>
+                            <p>Clique em "Gravar" para começar a gravar suas notas. Toque no piano e clique novamente em "Gravar" para parar.</p>
+                        </div>
+                        
+                        <div class="tutorial-step" style="margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">4. Edite sua composição</h3>
+                            <p>Arraste e solte as notas na trilha para reorganizá-las. Adicione novas trilhas para criar arranjos complexos.</p>
+                        </div>
+                        
+                        <div class="tutorial-step" style="margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">5. Exporte sua música</h3>
+                            <p>Quando estiver satisfeito com sua composição, clique em "Exportar" para salvar como arquivo de áudio.</p>
+                        </div>
+                        
+                        <button class="main-btn close-tutorial" style="position: absolute; top: 1rem; right: 1rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                            <svg viewBox="0 0 24 24" width="24" height="24">
+                                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(tutorialOverlay);
+                
+                const closeButton = tutorialOverlay.querySelector('.close-tutorial');
+                closeButton.addEventListener('click', function() {
+                    document.body.removeChild(tutorialOverlay);
+                });
+            }
+            
+            addHelpButton();
+            
+            // Ajuste de volume
+            function addVolumeControl() {
+                const controlGroup = document.querySelectorAll('.control-group')[1];
+                const volumeControl = document.createElement('div');
+                volumeControl.className = 'volume-control';
+                volumeControl.style.display = 'flex';
+                volumeControl.style.alignItems = 'center';
+                volumeControl.style.gap = '0.5rem';
+                volumeControl.style.marginLeft = '1rem';
+                
+                volumeControl.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                        <path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="75" style="width: 100px; accent-color: var(--primary-color);">
+                `;
+                
+                controlGroup.appendChild(volumeControl);
+                
+                // Adicionar funcionalidade de controle de volume
+                const volumeSlider = document.getElementById('volumeSlider');
+                volumeSlider.addEventListener('input', function() {
+                    const volumeLevel = parseInt(this.value) / 100;
+                    synth.volume.value = Math.log10(volumeLevel) * 20; // Conversão para dB
+                });
+            }
+            
+            addVolumeControl();
+            
+            // Adicionar temas/skins
+            function addThemeToggle() {
+                const header = document.querySelector('header nav ul');
+                const themeLi = document.createElement('li');
+                const themeLink = document.createElement('a');
+                themeLink.href = '#';
+                themeLink.textContent = 'Tema';
+                themeLi.appendChild(themeLink);
+                header.appendChild(themeLi);
+                
+                // Adicionar menu de temas
+                const themeMenu = document.createElement('div');
+                themeMenu.className = 'theme-menu';
+                themeMenu.style.position = 'absolute';
+                themeMenu.style.backgroundColor = 'var(--dark-bg)';
+                themeMenu.style.borderRadius = '0.5rem';
+                themeMenu.style.padding = '0.5rem';
+                themeMenu.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.5)';
+                themeMenu.style.display = 'none';
+                themeMenu.style.zIndex = '100';
+                
+                const themes = [
+                    { name: 'Padrão', primary: '#6366f1', secondary: '#4f46e5', accent: '#8b5cf6', dark: '#111827' },
+                    { name: 'Neon', primary: '#00ff9f', secondary: '#00b8ff', accent: '#fb36ff', dark: '#0a0a1a' },
+                    { name: 'Vintage', primary: '#ff7e5f', secondary: '#feb47b', accent: '#ffcb8e', dark: '#2c2c2c' },
+                    { name: 'Minimalista', primary: '#e0e0e0', secondary: '#c0c0c0', accent: '#a0a0a0', dark: '#202020' }
+                ];
+                
+                themes.forEach(theme => {
+                    const themeOption = document.createElement('div');
+                    themeOption.className = 'theme-option';
+                    themeOption.style.padding = '0.5rem 1rem';
+                    themeOption.style.cursor = 'pointer';
+                    themeOption.style.display = 'flex';
+                    themeOption.style.alignItems = 'center';
+                    themeOption.style.gap = '0.5rem';
+                    themeOption.style.borderRadius = '0.3rem';
+                    themeOption.style.transition = 'background-color 0.2s';
+                    
+                    themeOption.innerHTML = `
+                        <div style="width: 15px; height: 15px; background: ${theme.primary}; border-radius: 50%;"></div>
+                        <span>${theme.name}</span>
+                    `;
+                    
+                    themeOption.addEventListener('mouseenter', function() {
+                        this.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    });
+                    
+                    themeOption.addEventListener('mouseleave', function() {
+                        this.style.backgroundColor = 'transparent';
+                    });
+                    
+                    themeOption.addEventListener('click', function() {
+                        document.documentElement.style.setProperty('--primary-color', theme.primary);
+                        document.documentElement.style.setProperty('--secondary-color', theme.secondary);
+                        document.documentElement.style.setProperty('--accent-color', theme.accent);
+                        document.documentElement.style.setProperty('--dark-bg', theme.dark);
+                        themeMenu.style.display = 'none';
+                    });
+                    
+                    themeMenu.appendChild(themeOption);
+                });
+                
+                document.body.appendChild(themeMenu);
+                
+                themeLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const rect = this.getBoundingClientRect();
+                    themeMenu.style.top = `${rect.bottom + 5}px`;
+                    themeMenu.style.left = `${rect.left}px`;
+                    themeMenu.style.display = themeMenu.style.display === 'none' ? 'block' : 'none';
+                });
+                
+                // Fechar menu ao clicar fora
+                document.addEventListener('click', function(e) {
+                    if (!themeLi.contains(e.target) && !themeMenu.contains(e.target)) {
+                        themeMenu.style.display = 'none';
+                    }
+                });
+            }
+            
+            addThemeToggle();
+            
+            // Adicionar suporte para tempo/BPM e quantização
+            function addTempoControl() {
+                const controlGroup = document.querySelector('.control-group:first-child');
+                const tempoControl = document.createElement('div');
+                tempoControl.className = 'tempo-control';
+                tempoControl.style.display = 'flex';
+                tempoControl.style.alignItems = 'center';
+                tempoControl.style.gap = '0.5rem';
+                tempoControl.style.marginLeft = '1rem';
+                
+                tempoControl.innerHTML = `
+                    <label for="bpmInput" style="font-size: 0.9rem;">BPM:</label>
+                    <input type="number" id="bpmInput" min="40" max="240" value="120" style="width: 60px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 0.3rem; padding: 0.3rem;">
+                `;
+                
+                controlGroup.appendChild(tempoControl);
+                
+                // Adicionar funcionalidade de controle de BPM
+                const bpmInput = document.getElementById('bpmInput');
+                bpmInput.addEventListener('change', function() {
+                    Tone.Transport.bpm.value = parseInt(this.value);
+                });
+                
+                // Inicializar o BPM
+                Tone.Transport.bpm.value = 120;
+            }
+            
+            addTempoControl();
+            
+            // Inicializar o Tone.js quando o usuário interage com a página
+            document.body.addEventListener('click', function() {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+            }, {once: true});
+        });
+    </script>
+</body>
+</html>
